@@ -3485,6 +3485,8 @@ new_sctp_packet(int address_family,
 	if (encapsulate) {
 		set_packet_ip_header(packet, address_family, ip_bytes,
 				     ip_info.tos.value, ip_info.flow_label,
+					 ip_info.id, ip_info.frag_off,
+					 ip_info.dont_frag, ip_info.more_frag,
 				     ip_info.ttl, IPPROTO_UDP);
 		udp_header = packet_append_header(packet, HEADER_UDP, udp_header_bytes);
 		udp_header->total_bytes = udp_header_bytes + sctp_header_bytes + sctp_chunk_bytes;
@@ -3495,6 +3497,8 @@ new_sctp_packet(int address_family,
 	} else {
 		set_packet_ip_header(packet, address_family, ip_bytes,
 				     ip_info.tos.value, ip_info.flow_label,
+					 ip_info.id, ip_info.frag_off,
+					 ip_info.dont_frag, ip_info.more_frag,
 				     ip_info.ttl, IPPROTO_SCTP);
 	}
 
@@ -3631,6 +3635,8 @@ new_sctp_generic_packet(int address_family,
 	if (encapsulate) {
 		set_packet_ip_header(packet, address_family, ip_bytes,
 				     ip_info.tos.value, ip_info.flow_label,
+					 ip_info.id, ip_info.frag_off,
+					 ip_info.dont_frag, ip_info.more_frag,
 				     ip_info.ttl, IPPROTO_UDP);
 		udp_header = packet_append_header(packet, HEADER_UDP, udp_header_bytes);
 		udp_header->total_bytes = udp_header_bytes + sctp_header_bytes + sctp_chunk_bytes;
@@ -3641,6 +3647,8 @@ new_sctp_generic_packet(int address_family,
 	} else {
 		set_packet_ip_header(packet, address_family, ip_bytes,
 				     ip_info.tos.value, ip_info.flow_label,
+					 ip_info.id, ip_info.frag_off,
+					 ip_info.dont_frag, ip_info.more_frag,
 				     ip_info.ttl, IPPROTO_SCTP);
 	}
 

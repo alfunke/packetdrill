@@ -31,6 +31,8 @@
 /* Fill in IPv4 header fields. */
 static void set_ipv4_header(struct ipv4 *ipv4,
 			    u16 ip_bytes, u8 tos,
+				u16 id, u16 frag_off,
+				bool dont_frag, bool more_frag,
 			    u8 ttl, u8 protocol)
 {
 	ipv4->version = 4;
@@ -38,8 +40,13 @@ static void set_ipv4_header(struct ipv4 *ipv4,
 	ipv4->tos = tos;
 
 	ipv4->tot_len = htons(ip_bytes);
-	ipv4->id = 0;
-	ipv4->frag_off = 0;
+	ipv4->id = htons(id);
+	frag_off = frag_off & ~IP_RF;
+	if (dont_frag)
+		frag_off = frag_off | IP_DF;
+	if (more_frag)
+		frag_off = frag_off | IP_MF;
+	ipv4->frag_off = htons(frag_off);
 	if (ttl)
 		ipv4->ttl = ttl;
 	else
@@ -79,10 +86,13 @@ void set_ip_header(void *ip_header,
 		   int address_family,
 		   u16 ip_bytes,
 		   u8 tos, u32 flowlabel,
+		   u16 id, u16 frag_off,
+		   bool dont_frag, bool more_frag,
 		   u8 ttl, u8 protocol)
 {
 	if (address_family == AF_INET)
-		set_ipv4_header(ip_header, ip_bytes, tos, ttl, protocol);
+		set_ipv4_header(ip_header, ip_bytes, tos, id,
+				frag_off, dont_frag, more_frag, ttl, protocol);
 	else if (address_family == AF_INET6)
 		set_ipv6_header(ip_header, ip_bytes, tos, flowlabel,
 				ttl, protocol);
@@ -94,6 +104,8 @@ void set_packet_ip_header(struct packet *packet,
 			  int address_family,
 			  u16 ip_bytes,
 			  u8 tos, u32 flowlabel,
+			  u16 id, u16 frag_off,
+			  bool dont_frag, bool more_frag,
 			  u8 ttl, u8 protocol)
 {
 	struct header *ip_header = NULL;
@@ -105,8 +117,11 @@ void set_packet_ip_header(struct packet *packet,
 		ip_header = packet_append_header(packet, HEADER_IPV4,
 						 sizeof(*ipv4));
 		ip_header->total_bytes = ip_bytes;
-		set_ipv4_header(ipv4, ip_bytes, tos, ttl, protocol);
+		set_ipv4_header(ipv4, ip_bytes, tos, id,
+				frag_off, dont_frag, more_frag, ttl, protocol);
 	} else if (address_family == AF_INET6) {
+		if (id || frag_off || dont_frag || more_frag)
+			die("IP fragmentation is not yet implementet for ipv6. Please don't specify those fields\n");
 		struct ipv6 *ipv6 = (struct ipv6 *) packet->buffer;
 		packet->ipv6 = ipv6;
 		assert(packet->ipv4 == NULL);
@@ -123,6 +138,8 @@ int ipv4_header_append(struct packet *packet,
 		       const char *ip_src,
 		       const char *ip_dst,
 		       const u8 tos,
+			   u16 id, u16 frag_off,
+			   bool dont_frag, bool more_frag,
 		       const u8 ttl,
 		       char **error)
 {
@@ -137,7 +154,8 @@ int ipv4_header_append(struct packet *packet,
 	}
 
 	ipv4 = header->h.ipv4;
-	set_ip_header(ipv4, AF_INET, 0, tos, 0, ttl, 0);
+	set_ip_header(ipv4, AF_INET, 0, tos, 0, id, frag_off,
+				dont_frag, more_frag, ttl, 0);
 
 	if (inet_pton(AF_INET, ip_src, &ipv4->src_ip) != 1) {
 		asprintf(error, "bad IPv4 src address: '%s'\n", ip_src);
@@ -157,6 +175,8 @@ int ipv6_header_append(struct packet *packet,
 		       const char *ip_dst,
 		       const u8 tos,
 		       const u8 hop_limit,
+			   u16 id, u16 frag_off,
+			   bool dont_frag, bool more_frag,
 		       char **error)
 {
 	struct header *header = NULL;
@@ -170,7 +190,8 @@ int ipv6_header_append(struct packet *packet,
 	}
 
 	ipv6 = header->h.ipv6;
-	set_ip_header(ipv6, AF_INET6, sizeof(struct ipv6), tos, 0, hop_limit, 0);
+	set_ip_header(ipv6, AF_INET6, sizeof(struct ipv6), tos, 0,
+				id, frag_off, dont_frag, more_frag, hop_limit, 0);
 
 	if (inet_pton(AF_INET6, ip_src, &ipv6->src_ip) != 1) {
 		asprintf(error, "bad IPv6 src address: '%s'\n", ip_src);

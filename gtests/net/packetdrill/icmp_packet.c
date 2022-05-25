@@ -398,7 +398,8 @@ struct packet *new_icmp_packet(int address_family,
 
 	/* Set IP header fields */
 	set_packet_ip_header(packet, address_family, ip_bytes, ip_info.tos.value,
-			     ip_info.flow_label, ip_info.ttl,
+			     ip_info.flow_label, ip_info.id, ip_info.frag_off,
+				 ip_info.dont_frag, ip_info.more_frag, ip_info.ttl,
 			     icmp_protocol(address_family));
 
 	/* Find the start of the ICMP header and then populate common fields. */
@@ -421,11 +422,12 @@ struct packet *new_icmp_packet(int address_family,
 					     (encapsulated ? sizeof(struct udp) : 0) +
 					     layer4_header_len(protocol) +
 					     payload_bytes);
+		// TODO: do we need to set correct ip fragmentation values here?
 		if (encapsulated) {
 			struct udp *udp;
 
 			set_ip_header(echoed_ip, address_family, echoed_ip_bytes,
-				      0, 0, 0, IPPROTO_UDP);
+				      0, 0, 0, 0, false, false, 0, IPPROTO_UDP);
 			udp = (struct udp *)(echoed_ip + ip_fixed_bytes);
 			udp->src_port = htons(udp_src_port);
 			udp->dst_port = htons(udp_dst_port);
@@ -434,7 +436,7 @@ struct packet *new_icmp_packet(int address_family,
 					 payload_bytes);
 		} else {
 			set_ip_header(echoed_ip, address_family, echoed_ip_bytes,
-				      0, 0, 0, protocol);
+				      0, 0, 0, 0, false, false, 0, protocol);
 		}
 		if (protocol == IPPROTO_SCTP) {
 			u32 *v_tag = packet_echoed_sctp_v_tag(packet, encapsulated);

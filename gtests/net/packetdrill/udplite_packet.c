@@ -73,6 +73,8 @@ struct packet *new_udplite_packet(int address_family,
 	/* Set IP header fields */
 	set_packet_ip_header(packet, address_family, ip_bytes,
 			     ip_info.tos.value, ip_info.flow_label,
+				 ip_info.id, ip_info.frag_off,
+				 ip_info.dont_frag, ip_info.more_frag,
 			     ip_info.ttl, IPPROTO_UDPLITE);
 
 	udplite_header = packet_append_header(packet, HEADER_UDPLITE,

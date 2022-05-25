@@ -2556,10 +2556,15 @@ packet_prefix
 	char *error = NULL;
 	struct packet *packet = $1;
 	u8 tos = $3.tos.value;
+	u16 id = $3.id;
+	u16 frag_off = $3.frag_off;
+	bool dont_frag = $3.dont_frag;
+	bool more_frag = $3.more_frag;
 	u8 ttl = $3.ttl;
 	char *ip_src = $4;
 	char *ip_dst = $6;
-	if (ipv4_header_append(packet, ip_src, ip_dst, tos, ttl, &error))
+	if (ipv4_header_append(packet, ip_src, ip_dst, tos, id, frag_off,
+						dont_frag, more_frag, ttl, &error))
 		semantic_error(error);
 	free(ip_src);
 	free(ip_dst);
@@ -2569,10 +2574,15 @@ packet_prefix
 	char *error = NULL;
 	struct packet *packet = $1;
 	u8 tos = $3.tos.value;
+	u16 id = $3.id;
+	u16 frag_off = $3.frag_off;
+	bool dont_frag = $3.dont_frag;
+	bool more_frag = $3.more_frag;
 	u8 hop_limit = $3.ttl;
 	char *ip_src = $4;
 	char *ip_dst = $6;
-	if (ipv6_header_append(packet, ip_src, ip_dst, tos, hop_limit, &error))
+	if (ipv6_header_append(packet, ip_src, ip_dst, tos, id, frag_off,
+						dont_frag, more_frag, hop_limit, &error))
 		semantic_error(error);
 	free(ip_src);
 	free(ip_dst);
