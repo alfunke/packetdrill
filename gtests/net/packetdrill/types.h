@@ -145,16 +145,20 @@ struct tos_spec {
 
 #define TTL_CHECK_NONE 255
 
+struct ip_frag {
+	u16 id;
+	bool length_set;
+	u16 offset;
+	u16 length;
+	bool dont_frag;
+	bool more_frag;
+};
+
 struct ip_info {
 	struct tos_spec tos;
 	u32 flow_label;
 	u8 ttl;
-	u16 id;
-	u16 frag_off;
-	u16 length;
-	bool length_set;
-	bool dont_frag;
-	bool more_frag;
+	struct ip_frag frag;
 };
 
 static inline struct ip_info ip_info_new() {
@@ -164,12 +168,12 @@ static inline struct ip_info ip_info_new() {
 	info.tos.value = 0;
 	info.flow_label = 0;
 	info.ttl = 0;
-	info.id = 0;
-	info.frag_off = 0;
-	info.length = 0;
-	info.length_set = false;
-	info.dont_frag = false;
-	info.more_frag = false;
+	info.frag.id = 0;
+	info.frag.offset = 0;
+	info.frag.length = 0;
+	info.frag.length_set = false;
+	info.frag.dont_frag = false;
+	info.frag.more_frag = false;
 
 	return info;
 }
