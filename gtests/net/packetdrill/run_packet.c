@@ -45,6 +45,7 @@
 #include "tcp_options_iterator.h"
 #include "tcp_options_to_string.h"
 #include "tcp_packet.h"
+#include "types.h"
 
 /* To avoid issues with TIME_WAIT, FIN_WAIT1, and FIN_WAIT2 we use
  * dynamically-chosen, unique 4-tuples for each test. We implement the
@@ -3378,6 +3379,67 @@ out:
 	return result;
 }
 
+/* If desired, fragments the payload of outer most ipv4 packet.
+ * Disables all shortcut pointers and headers except the first (ip).
+ */
+static void packet_do_fragmentation(struct packet *packet) {
+	if (!packet->frag_length_set) {
+		assert(packet->frag_offset == 0);
+		return;
+	}
+
+	struct header *ip_header = &packet->headers[0];
+	u32 offset_bytes = packet->frag_offset * 8;
+	
+	DEBUGP("Fragmenting packet with offset: %u and length: %u", offset_bytes, packet->frag_length);
+
+	// Fragmentation only supported for ipv4
+	assert(ip_header->type == HEADER_IPV4);
+	assert(packet->ipv4 != NULL);
+	assert(packet->ipv6 == NULL);
+
+	// Check ip payload size
+	if ((offset_bytes + packet->frag_length) > (packet->ip_bytes - ip_header_min_len(AF_INET)))
+		assert(!"ip fragment bigger than provided ip payload");
+
+	// Move ip payload according to offset
+	if (offset_bytes > 0) {
+		struct header payload_header = packet->headers[1];
+		assert(payload_header.type != HEADER_NONE);
+		u8 *payload = payload_header.h.ptr;
+		assert(payload == ip_header->h.ptr + ip_header->header_bytes);
+		memmove(payload, payload + offset_bytes, packet->frag_length);
+	}
+
+	// Set new length
+	assert(ip_header->header_bytes / sizeof(u32) == ip_header->h.ipv4->ihl);
+	packet->ip_bytes = ip_header->header_bytes + packet->frag_length;
+	ip_header->h.ipv4->tot_len = htons(packet->ip_bytes);
+
+	// Disable all headers except the first
+	for (int i = 1; i < ARRAY_SIZE(packet->headers); ++i) {
+		packet->headers[i].type = HEADER_NONE;
+	}
+
+	// Disable all shortcut pointers
+	packet->sctp = NULL;
+	packet->chunk_list = NULL;
+	packet->tcp = NULL;
+	packet->udp = NULL;
+	packet->udplite = NULL;
+	packet->icmpv4 = NULL;
+	packet->icmpv6 = NULL;
+	packet->tcp_ts_val = NULL;
+	packet->tcp_ts_ecr = NULL;
+
+	// Fill in IPv4 header checksum
+	struct ipv4 *ipv4 = packet->ipv4;
+	ipv4->check = 0;
+	ipv4->check = ipv4_checksum(ipv4, ipv4_header_len(ipv4));
+
+	return;
+}
+
 /* Checksum the packet and inject it into the kernel under test. */
 static int send_live_ip_packet(struct netdev *netdev,
 			       struct packet *packet)
@@ -3391,6 +3453,8 @@ static int send_live_ip_packet(struct netdev *netdev,
 
 	/* Fill in layer 3 and layer 4 checksums */
 	checksum_packet(packet);
+
+	packet_do_fragmentation(packet);
 
 	return netdev_send(netdev, packet);
 }

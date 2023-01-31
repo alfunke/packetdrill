@@ -168,6 +168,7 @@ struct packet *new_tcp_packet(int address_family,
 		set_packet_ip_header(packet, address_family, ip_bytes,
 				     ip_info.tos.value, ip_info.flow_label,
 					 ip_info.frag.id, ip_info.frag.offset,
+					 ip_info.frag.length_set, ip_info.frag.length,
 					 ip_info.frag.dont_frag, ip_info.frag.more_frag,
 				     ip_info.ttl, IPPROTO_UDP);
 		udp_header = packet_append_header(packet, HEADER_UDP, udp_header_bytes);
@@ -180,6 +181,7 @@ struct packet *new_tcp_packet(int address_family,
 		set_packet_ip_header(packet, address_family, ip_bytes,
 				     ip_info.tos.value, ip_info.flow_label,
 					 ip_info.frag.id, ip_info.frag.offset,
+					 ip_info.frag.length_set, ip_info.frag.length,
 					 ip_info.frag.dont_frag, ip_info.frag.more_frag,
 				     ip_info.ttl, IPPROTO_TCP);
 	}

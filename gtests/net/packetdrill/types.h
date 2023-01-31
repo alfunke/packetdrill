@@ -148,7 +148,7 @@ struct tos_spec {
 struct ip_frag {
 	u16 id;
 	bool length_set;
-	u16 offset;
+	u16 offset; // In octets, as found in ip header
 	u16 length;
 	bool dont_frag;
 	bool more_frag;

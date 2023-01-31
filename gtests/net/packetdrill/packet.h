@@ -124,6 +124,10 @@ struct packet {
 #define FLAG_PARSE_ACE            0x400 /* output parsed AccECN ACE field */
 
 	enum tos_chk_t tos_chk;	/* how to treat the TOS byte of a packet */
+	/* IP fragmentation related */
+	bool frag_length_set;
+	u16 frag_length;
+	u16 frag_offset; // In octets, as found in ip header
 
 	__be32 *tcp_ts_val;	/* location of TCP timestamp val, or NULL */
 	__be32 *tcp_ts_ecr;	/* location of TCP timestamp ecr, or NULL */

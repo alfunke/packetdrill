@@ -44,6 +44,7 @@ extern void set_packet_ip_header(struct packet *packet,
 				 u16 ip_bytes,
 				 u8 tos, u32 flowlabel,
 				 u16 id, u16 frag_off,
+				 bool length_set, u16 frag_length,
 				 bool dont_frag, bool more_frag,
 				 u8 ttl, u8 protocol);
 

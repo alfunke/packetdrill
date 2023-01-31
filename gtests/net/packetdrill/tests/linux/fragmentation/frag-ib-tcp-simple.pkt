@@ -1,0 +1,27 @@
++0.000 socket(..., SOCK_STREAM, IPPROTO_TCP) = 3
++0.000 setsockopt(3, SOL_SOCKET, SO_REUSEADDR, [1], 4) = 0
++0.000 bind(3, ..., ...) = 0
++0.000 listen(3, 1) = 0
+
++0.000 < S     0:0(0)                win 65535 <mss 1460,sackOK,eol,eol>
++0.000 > S.    0:0(0)       ack    1 win 64240 <mss 1460,nop,nop,sackOK>
++0.050 <  .    1:1(0)       ack    1 win 65535
++0.000 accept(3, ..., ...) = 4
++0.000 close(3) = 0
+
++00.100 getsockopt(4, SOL_SOCKET, SO_ERROR, [0], [4]) = 0
+
++0  < . 1:1001(1000) ack 1 win 65535
++0  > . 1:1(0) ack 1001 win 64000
++0.010 recv(4, ..., 2000, 0) = 1000
+
++0  < [id 7, offset   0, length 360, flags [MF]] . 1001:2001(1000) ack 1 win 65535
++0  < [id 7, offset 360, length 360, flags [MF]] . 1001:2001(1000) ack 1 win 65535
++0  < [id 7, offset 720, length 300, flags []]   . 1001:2001(1000) ack 1 win 65535
++0  > . 1:1(0) ack 2001 win 63000
++0.010 recv(4, ..., 2000, 0) = 1000
+
++1.000 close(4) = 0
++0.000 > F.       1:1(0)    ack 2001 win 64000
++0.050 < F. 2001:2001(0)    ack    2 win 65535
++0.000 >  .       2:2(0)    ack 2002 win 64000

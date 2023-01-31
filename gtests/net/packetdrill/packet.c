@@ -160,11 +160,14 @@ static struct packet *packet_copy_with_headroom(struct packet *old_packet,
 
 	memcpy(new_base, old_base, bytes_used);
 
-	packet->ip_bytes	= old_packet->ip_bytes;
-	packet->direction	= old_packet->direction;
-	packet->time_usecs	= old_packet->time_usecs;
-	packet->flags		= old_packet->flags;
-	packet->tos_chk		= old_packet->tos_chk;
+	packet->ip_bytes		= old_packet->ip_bytes;
+	packet->direction		= old_packet->direction;
+	packet->time_usecs		= old_packet->time_usecs;
+	packet->flags			= old_packet->flags;
+	packet->tos_chk			= old_packet->tos_chk;
+	packet->frag_length_set	= old_packet->frag_length_set;
+	packet->frag_length		= old_packet->frag_length;
+	packet->frag_offset		= old_packet->frag_offset;
 
 	packet_copy_headers(packet, old_packet, bytes_headroom);
 

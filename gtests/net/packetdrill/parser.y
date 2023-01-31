@@ -493,6 +493,7 @@ static struct tcp_option *new_tcp_exp_fast_open_option(const char *cookie_string
 	s64 time_usecs;
 	enum direction_t direction;
 	u8 ip_ecn;
+	struct ip_frag ip_frag;
 	struct ip_info ip_info;
 	struct mpls_stack *mpls_stack;
 	struct mpls mpls_stack_entry;
@@ -577,7 +578,7 @@ static struct tcp_option *new_tcp_exp_fast_open_option(const char *cookie_string
 %token <reserved> CS0 CS1 CS2 CS3 CS4 CS5 CS6 CS7
 %token <reserved> AF11 AF12 AF13 AF21 AF22 AF23 AF31 AF32 AF33 AF41 AF42 AF43
 %token <reserved> EF VOICE_ADMIT LE
-%token <reserved> IPV4 IPV6 ICMP SCTP UDP UDPLITE GRE MTU ID
+%token <reserved> IPV4 IPV6 ICMP SCTP UDP UDPLITE GRE MTU ID OFFSET LENGTH IP_FLAGS NONE DF MF
 %token <reserved> MPLS LABEL TC TTL
 %token <reserved> OPTION
 %token <reserved> AF_NAME AF_ARG
@@ -666,6 +667,7 @@ static struct tcp_option *new_tcp_exp_fast_open_option(const char *cookie_string
 %type <direction> direction
 %type <ip_info> ip_info opt_ip_info
 %type <ip_ecn> ip_ecn
+%type <ip_frag> ip_flags
 %type <option> option options opt_options
 %type <event> event events event_time action
 %type <time_usecs> time opt_end_time
@@ -682,7 +684,7 @@ static struct tcp_option *new_tcp_exp_fast_open_option(const char *cookie_string
 %type <integer> opt_mpls_stack_bottom
 %type <integer> opt_icmp_mtu
 %type <integer> opt_icmp_echo_id
-%type <integer> dscp flow_label ttl hlim
+%type <integer> dscp flow_label ttl hlim ip_id ip_offset ip_length
 %type <string> icmp_type opt_icmp_code opt_ack_flag opt_word ack_and_ace flags
 %type <string> opt_tcp_fast_open_cookie tcp_fast_open_cookie
 %type <string> opt_note note word_list
@@ -2829,6 +2831,71 @@ hlim
 	$$ = hlim;
 }
 
+ip_id
+: ID INTEGER {
+	s64 id = $2;
+
+	if (!is_valid_u16(id)) {
+		semantic_error("id out of range for 16 bits");
+	}
+	$$ = id;
+}
+;
+
+ip_offset
+: OFFSET INTEGER {
+	s64 offset = $2;
+
+	if (offset % 8 != 0) {
+	    semantic_error("Offset needs to be a multiple of 8");
+	}
+	offset /= 8;
+
+	if ((offset < 0) || (offset > (USHRT_MAX >> 3))) {
+		semantic_error("offset out of range for 13 bits");
+	}
+	$$ = offset;
+}
+;
+
+ip_length
+: LENGTH INTEGER {
+	s64 length = $2;
+
+	if (!is_valid_u16(length)) {
+		semantic_error("length out of range");
+	}
+	$$ = length;
+}
+;
+
+ip_flags
+:  {
+	$$.dont_frag = false;
+	$$.more_frag = false;
+}
+| NONE {
+	$$.dont_frag = false;
+	$$.more_frag = false;
+}
+| DF {
+	$$.dont_frag = true;
+	$$.more_frag = false;
+}
+| MF {
+	$$.dont_frag = false;
+	$$.more_frag = true;
+}
+| DF ',' MF {
+	$$.dont_frag = true;
+	$$.more_frag = true;
+}
+| MF ',' DF {
+	$$.dont_frag = true;
+	$$.more_frag = true;
+}
+;
+
 ip_info
 : ttl {
 	$$ = ip_info_new();
@@ -2853,6 +2920,43 @@ ip_info
 | ip_info ',' flow_label {
 	$$ = $1;
 	$$.flow_label = $3;
+}
+/* fragmentation */
+| ip_id {
+	$$ = ip_info_new();
+	$$.frag.id = $1;
+}
+| ip_info ',' ip_id {
+	$$ = $1;
+	$$.frag.id = $3;
+}
+| ip_offset {
+	$$ = ip_info_new();
+	$$.frag.offset = $1;
+}
+| ip_info ',' ip_offset {
+	$$ = $1;
+	$$.frag.offset = $3;
+}
+| ip_length {
+	$$ = ip_info_new();
+	$$.frag.length = $1;
+	$$.frag.length_set = true;
+}
+| ip_info ',' ip_length {
+	$$ = $1;
+	$$.frag.length = $3;
+	$$.frag.length_set = true;
+}
+| IP_FLAGS '[' ip_flags ']' {
+	$$ = ip_info_new();
+	$$.frag.dont_frag = $3.dont_frag;
+	$$.frag.more_frag = $3.more_frag;
+}
+| ip_info ',' IP_FLAGS '[' ip_flags ']' {
+	$$ = $1;
+	$$.frag.dont_frag = $5.dont_frag;
+	$$.frag.more_frag = $5.more_frag;
 }
 /* different possibilities to set the tos/class field */
 // set entire field

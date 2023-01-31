@@ -105,15 +105,24 @@ void set_packet_ip_header(struct packet *packet,
 			  u16 ip_bytes,
 			  u8 tos, u32 flowlabel,
 			  u16 id, u16 frag_off,
+			  bool length_set, u16 frag_length,
 			  bool dont_frag, bool more_frag,
 			  u8 ttl, u8 protocol)
 {
 	struct header *ip_header = NULL;
 
 	if (address_family == AF_INET) {
+		if (!length_set && frag_off)
+			die("Ip offset without length. Please specify length of ip packet\n");
+
 		struct ipv4 *ipv4 = (struct ipv4 *) packet->buffer;
 		packet->ipv4 = ipv4;
 		assert(packet->ipv6 == NULL);
+
+		packet->frag_length_set = length_set;
+		packet->frag_length = frag_length;
+		packet->frag_offset = frag_off;
+
 		ip_header = packet_append_header(packet, HEADER_IPV4,
 						 sizeof(*ipv4));
 		ip_header->total_bytes = ip_bytes;
@@ -121,7 +130,7 @@ void set_packet_ip_header(struct packet *packet,
 				frag_off, dont_frag, more_frag, ttl, protocol);
 	} else if (address_family == AF_INET6) {
 		if (id || frag_off || dont_frag || more_frag)
-			die("IP fragmentation is not yet implementet for ipv6. Please don't specify those fields\n");
+			die("IP fragmentation is not yet implemented for ipv6. Please don't specify those fields\n");
 		struct ipv6 *ipv6 = (struct ipv6 *) packet->buffer;
 		packet->ipv6 = ipv6;
 		assert(packet->ipv4 == NULL);
