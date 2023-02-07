@@ -3383,7 +3383,7 @@ out:
  * Disables all shortcut pointers and headers except the first (ip).
  */
 static void packet_do_fragmentation(struct packet *packet) {
-	if (!packet->frag_length_set) {
+	if (!packet->is_fragmented) {
 		assert(packet->frag_offset == 0);
 		return;
 	}

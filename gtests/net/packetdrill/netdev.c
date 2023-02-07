@@ -490,7 +490,7 @@ static int local_netdev_send(struct netdev *a_netdev,
 	assert(packet->ipv4 || packet->ipv6);
 	/* We only do SCTP, TCP, UDP, UDPLite and ICMP */
 	assert(packet->sctp || packet->tcp || packet->udp || packet->udplite ||
-	       packet->icmpv4 || packet->icmpv6 || packet->frag_length_set);
+	       packet->icmpv4 || packet->icmpv6 || packet->is_fragmented);
 
 	DEBUGP("local_netdev_send\n");
 

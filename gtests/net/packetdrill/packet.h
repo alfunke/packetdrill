@@ -125,7 +125,7 @@ struct packet {
 
 	enum tos_chk_t tos_chk;	/* how to treat the TOS byte of a packet */
 	/* IP fragmentation related */
-	bool frag_length_set;
+	bool is_fragmented;
 	u16 frag_length;
 	u16 frag_offset; // In octets, as found in ip header
 

@@ -119,7 +119,7 @@ void set_packet_ip_header(struct packet *packet,
 		packet->ipv4 = ipv4;
 		assert(packet->ipv6 == NULL);
 
-		packet->frag_length_set = length_set;
+		packet->is_fragmented = length_set;
 		packet->frag_length = frag_length;
 		packet->frag_offset = frag_off;
 
