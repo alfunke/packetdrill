@@ -31,15 +31,20 @@
 #include "sctp_chunk_to_string.h"
 #include "tcp_options_to_string.h"
 
-static void endpoints_to_string(FILE *s, const struct packet *packet)
+static void endpoints_to_string(FILE *s, const struct packet *packet,
+				enum dump_format_t format)
 {
+	if ((format != DUMP_FULL) && (format != DUMP_VERBOSE)) {
+		return;
+	}
+
 	char src_string[ADDR_STR_LEN];
 	char dst_string[ADDR_STR_LEN];
 	struct tuple tuple;
 
 	get_packet_tuple(packet, &tuple);
 
-	fprintf(s, "%s:%u > %s:%u",
+	fprintf(s, "%s:%u > %s:%u ",
 		ip_to_string(&tuple.src.ip, src_string), ntohs(tuple.src.port),
 		ip_to_string(&tuple.dst.ip, dst_string), ntohs(tuple.dst.port));
 }
@@ -129,10 +134,6 @@ static int sctp_packet_to_string(FILE *s, struct packet *packet, int i,
 	int result = STATUS_OK;       /* return value */
 
 	assert(*error == NULL);
-	if ((format == DUMP_FULL) || (format == DUMP_VERBOSE)) {
-		endpoints_to_string(s, packet);
-		fputc(' ', s);
-	}
 
 	fputs("sctp", s);
 	if (packet->flags & FLAGS_SCTP_BAD_CRC32C) {
@@ -184,11 +185,6 @@ static int tcp_packet_to_string(FILE *s, struct packet *packet, int i,
 {
 	int result = STATUS_OK;       /* return value */
 	int ace = 0;
-
-	if ((format == DUMP_FULL) || (format == DUMP_VERBOSE)) {
-		endpoints_to_string(s, packet);
-		fputc(' ', s);
-	}
 
 	/* We print flags in the same order as tcpdump 4.1.1. */
 	if (packet->tcp->fin)
@@ -261,11 +257,6 @@ static int udp_packet_to_string(FILE *s, struct packet *packet,
 {
 	int result = STATUS_OK;       /* return value */
 
-	if ((format == DUMP_FULL) || (format == DUMP_VERBOSE)) {
-		endpoints_to_string(s, packet);
-		fputc(' ', s);
-	}
-
 	fprintf(s, "udp (%u)", packet_payload_len(packet));
 
 	if (format == DUMP_VERBOSE)
@@ -278,11 +269,6 @@ static int udplite_packet_to_string(FILE *s, struct packet *packet,
 				    enum dump_format_t format, char **error)
 {
 	int result = STATUS_OK;       /* return value */
-
-	if ((format == DUMP_FULL) || (format == DUMP_VERBOSE)) {
-		endpoints_to_string(s, packet);
-		fputc(' ', s);
-	}
 
 	fprintf(s, "udplite (%u, %u)",
 		packet_payload_len(packet), ntohs(packet->udplite->cov));
@@ -358,6 +344,8 @@ int packet_to_string(struct packet *packet,
 	if ((packet->ipv4 == NULL) && (packet->ipv6 == NULL)) {
 		fputs("[NO IP HEADER]", s);
 	} else {
+		endpoints_to_string(s, packet, format);
+
 		if (packet->sctp != NULL) {
 			if (sctp_packet_to_string(s, packet, limit, format,
 						  error))
